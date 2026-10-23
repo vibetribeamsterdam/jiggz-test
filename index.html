@@ -65,7 +65,27 @@ nav.menu a{color:var(--text);text-decoration:none}
 .domhead h3{font-family:Cinzel,serif;font-size:clamp(26px,3vw,38px);font-weight:700;line-height:1.1;color:#fff}
 .outline{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 18px;border:1px solid rgba(226,180,92,.5);border-radius:4px;text-decoration:none;font-size:15px;font-weight:600;background:transparent;color:var(--gold);cursor:pointer;font-family:inherit}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:18px;margin-top:24px}
-.card{position:relative;display:block;aspect-ratio:3/2;border-radius:6px;overflow:hidden;text-decoration:none;background:var(--card)}
+.card{position:relative;display:block;width:100%;aspect-ratio:3/2;border-radius:6px;overflow:hidden;text-decoration:none;background:var(--card);border:0;padding:0;text-align:left;cursor:zoom-in;font:inherit;color:inherit}
+.card .zoom{position:absolute;top:14px;left:14px;width:40px;height:40px;border-radius:50%;background:rgba(7,8,12,.75);color:var(--gold);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s}
+.card:hover .zoom,.card:focus-visible .zoom{opacity:1}
+@media (hover:none){.card .zoom{opacity:1}}
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:100;background:rgba(4,5,8,.96);display:none;flex-direction:column}
+.lb.open{display:flex}
+.lb-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.lb-top .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lb-stage{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:zoom-in;touch-action:none}
+.lb-stage.zoomed{cursor:grab}.lb-stage.dragging{cursor:grabbing}
+.lb-stage img{max-width:calc(100% - 32px);max-height:calc(100% - 32px);object-fit:contain;user-select:none;-webkit-user-drag:none;transform-origin:0 0;will-change:transform}
+.lb-stage.zoomed img{max-width:none;max-height:none}
+.lb-bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border-top:1px solid var(--line)}
+.ic{width:48px;height:48px;border-radius:50%;border:1px solid var(--line2);background:rgba(17,19,26,.9);color:var(--text);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ic:hover{border-color:var(--gold);color:var(--gold)}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2}
+.lb-prev{left:16px}.lb-next{right:16px}
+.lb-hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:6px 12px;border-radius:4px;background:rgba(7,8,12,.8);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--dim);pointer-events:none}
+.lb-actions{display:flex;flex-wrap:wrap;gap:10px}
+.lb-actions .btn{min-height:48px;font-size:16px;padding:0 20px}
 .card .cover{position:absolute;inset:0}
 .card .shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(7,8,12,.95) 0%,rgba(7,8,12,.4) 50%,rgba(7,8,12,0) 75%)}
 .card .tag{position:absolute;top:14px;right:14px;padding:4px 10px;border-radius:3px;background:rgba(7,8,12,.75);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--gold)}
@@ -224,6 +244,7 @@ footer .cols div{display:flex;flex-direction:column;gap:8px}
       <aside class="aside" aria-label="Je expeditie">
         <img class="cover" id="asideImg" src="img/wereldwonderen.jpg" alt="">
         <span class="shade" aria-hidden="true"></span>
+        <button type="button" class="outline" id="asideView" style="position:absolute;top:18px;right:18px;background:rgba(7,8,12,.75)">Bekijk groot</button>
         <div style="position:relative;padding:30px;display:flex;flex-direction:column;gap:14px">
           <p class="mono" style="margin:0;font-size:13px;color:var(--gold)" id="asideLabel"></p>
           <h3 class="serif" style="font-size:32px;font-weight:700;line-height:1.1;color:#fff" id="asideTitle"></h3>
@@ -296,6 +317,32 @@ footer .cols div{display:flex;flex-direction:column;gap:8px}
   </div>
 </footer>
 
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-labelledby="lbTitle">
+  <div class="lb-top">
+    <div class="t">
+      <span class="mono" style="font-size:12px;color:var(--gold)" id="lbMeta"></span>
+      <span class="serif" style="font-size:22px;font-weight:700;line-height:1.2;color:#fff" id="lbTitle"></span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button type="button" class="ic" id="lbZoom" aria-label="Inzoomen"></button>
+      <button type="button" class="ic" id="lbClose" aria-label="Sluiten"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+  </div>
+  <div class="lb-stage" id="lbStage">
+    <button type="button" class="ic lb-nav lb-prev" id="lbPrev" aria-label="Vorige puzzel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+    <img id="lbImg" alt="" draggable="false">
+    <button type="button" class="ic lb-nav lb-next" id="lbNext" aria-label="Volgende puzzel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+    <span class="lb-hint" id="lbHint">KLIK OM IN TE ZOOMEN</span>
+  </div>
+  <div class="lb-bottom">
+    <p style="margin:0;max-width:640px;font-size:16px;color:var(--soft)" id="lbTag"></p>
+    <div class="lb-actions">
+      <button type="button" class="btn btn-gold" id="lbBuy">Bestel deze puzzel · € 35</button>
+      <button type="button" class="btn btn-ghost" id="lbAbo">Abonneer op dit domein</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const P = [
   { id:'wereldwonderen', d:'oud', title:'Vier wonderen, één horizon', short:'Wereldwonderen', meta:'GIZEH · MACHU PICCHU · ANGKOR WAT · GÖBEKLI TEPE', tagline:'Wie bouwde dit, en hoe? Vier mysteries uit de oudheid in één panorama.', img:'wereldwonderen', alt:'Panorama met de piramides van Gizeh, Machu Picchu, Angkor Wat en Göbekli Tepe' },
@@ -345,6 +392,8 @@ const count = d => { const n = P.filter(p => p.d === d.id).length; return n + (n
 const headphones = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;margin-right:6px"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="5" height="7" rx="1.5"/><rect x="16" y="14" width="5" height="7" rx="1.5"/></svg>';
 const arrow = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 
+const zoomIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/></svg>';
+const zoomOutIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/></svg>';
 function renderCollection(){
   $('total').textContent = P.length;
   $('domains').innerHTML = D.map(d => `
@@ -359,12 +408,13 @@ function renderCollection(){
       </div>
       <div class="pgrid">
         ${P.filter(p => p.d === d.id).map(p => `
-          <a href="#explorer" class="card" data-puzzle="${p.id}">
+          <button type="button" class="card" data-view="${p.id}" aria-label="Bekijk ${esc(p.title)} groot">
             <img class="cover" src="${src(p)}" alt="${esc(p.alt)}" loading="lazy">
             <span class="shade" aria-hidden="true"></span>
+            <span class="zoom" aria-hidden="true">${zoomIcon}</span>
             ${EPS[p.id] ? `<span class="tag">${headphones}PODCAST</span>` : ''}
             <span class="txt"><span class="meta">${esc(p.meta)}</span><span class="ttl">${esc(p.title)}</span><span class="tl">${esc(p.tagline)}</span></span>
-          </a>`).join('')}
+          </button>`).join('')}
       </div>
     </div>`).join('');
 }
@@ -399,6 +449,7 @@ function render(){
   $('chooserLabel').textContent = abo ? 'KIES JE DOMEIN VOOR HET ABONNEMENT' : 'PUZZEL GEKOZEN UIT DOMEIN';
   $('domChips').innerHTML = D.map(d => `<button type="button" class="chip" data-domkeep="${d.id}" aria-pressed="${d.id === S.domain}">${esc(d.name)}</button>`).join('');
   $('asideImg').src = src(sel); $('asideImg').alt = sel.alt;
+  $('asideView').dataset.view = sel.id;
   $('asideLabel').textContent = abo ? 'JOUW DOMEIN · ' + count(dom) : 'JOUW PUZZEL · ' + dom.name.toUpperCase();
   $('asideTitle').textContent = abo ? dom.name : sel.title;
   $('summary').textContent = abo
@@ -433,6 +484,66 @@ document.addEventListener('click', e => {
   }
   $('qr').innerHTML = s + '"/></svg>';
 })();
+// ---- grote weergave met zoom ----
+const LB = { i:0, z:false, s:1, x:0, y:0, drag:null, last:null };
+const order = D.flatMap(d => P.filter(p => p.d === d.id));
+const xl = p => 'img/xl/' + p.img + '.jpg';
+const lbImg = $('lbImg'), lbStage = $('lbStage');
+function lbApply(){ lbImg.style.transform = LB.z ? `translate(${LB.x}px,${LB.y}px) scale(${LB.s})` : ''; }
+function lbSetZoom(on, cx, cy){
+  if (on) {
+    const r = lbImg.getBoundingClientRect(), sr = lbStage.getBoundingClientRect();
+    const nat = lbImg.naturalWidth || r.width;
+    // punt onder de cursor blijft op zijn plek; zoom naar ware grootte, minimaal 2,2×
+    const px = (cx ?? r.left + r.width / 2) - r.left, py = (cy ?? r.top + r.height / 2) - r.top;
+    LB.z = true; lbStage.classList.add('zoomed');
+    lbImg.style.width = r.width + 'px'; lbImg.style.height = r.height + 'px';
+    const k = Math.max(nat / r.width, 2.2);
+    LB.s = k;
+    const ox = r.left - sr.left, oy = r.top - sr.top;
+    LB.x = ox + px - px * k; LB.y = oy + py - py * k;
+    lbImg.style.position = 'absolute'; lbImg.style.left = '0'; lbImg.style.top = '0';
+    lbClamp();
+  } else {
+    LB.z = false; lbStage.classList.remove('zoomed');
+    lbImg.style.position = ''; lbImg.style.width = ''; lbImg.style.height = '';
+  }
+  lbApply();
+  $('lbZoom').innerHTML = on ? zoomOutIcon : zoomIcon;
+  $('lbZoom').setAttribute('aria-label', on ? 'Uitzoomen' : 'Inzoomen');
+  $('lbHint').textContent = on ? 'SLEEP OM TE VERSCHUIVEN · KLIK OM UIT TE ZOOMEN' : 'KLIK OM IN TE ZOOMEN';
+}
+function lbClamp(){
+  const sr = lbStage.getBoundingClientRect();
+  const w = parseFloat(lbImg.style.width) * LB.s, h = parseFloat(lbImg.style.height) * LB.s;
+  LB.x = w > sr.width ? Math.min(0, Math.max(sr.width - w, LB.x)) : (sr.width - w) / 2;
+  LB.y = h > sr.height ? Math.min(0, Math.max(sr.height - h, LB.y)) : (sr.height - h) / 2;
+}
+function lbShow(i){
+  LB.i = (i + order.length) % order.length; const p = order[LB.i]; const d = D.find(x => x.id === p.d);
+  lbSetZoom(false);
+  lbImg.src = src(p); lbImg.alt = p.alt;
+  const big = new Image(); big.onload = () => { if (order[LB.i] === p) lbImg.src = big.src; }; big.src = xl(p);
+  $('lbMeta').textContent = `${d.name.toUpperCase()} · ${p.meta}`;
+  $('lbTitle').textContent = p.title;
+  $('lbTag').textContent = p.tagline + ' 1000 stukjes · 68 × 48 cm' + (EPS[p.id] ? ' · met podcast.' : '.');
+}
+function lbOpen(id){ lbShow(order.findIndex(p => p.id === id)); $('lb').classList.add('open'); document.body.style.overflow = 'hidden'; LB.last = document.activeElement; $('lbClose').focus(); }
+function lbClose(){ $('lb').classList.remove('open'); document.body.style.overflow = ''; lbSetZoom(false); if (LB.last) LB.last.focus(); }
+let moved = false;
+lbStage.addEventListener('pointerdown', e => { if (e.target.closest('.lb-nav')) return; moved = false; if (LB.z) { LB.drag = { x:e.clientX, y:e.clientY, ox:LB.x, oy:LB.y }; lbStage.classList.add('dragging'); lbStage.setPointerCapture(e.pointerId); } });
+lbStage.addEventListener('pointermove', e => { if (!LB.drag) return; const dx = e.clientX - LB.drag.x, dy = e.clientY - LB.drag.y; if (Math.abs(dx) + Math.abs(dy) > 4) moved = true; LB.x = LB.drag.ox + dx; LB.y = LB.drag.oy + dy; lbClamp(); lbApply(); });
+lbStage.addEventListener('pointerup', e => { lbStage.classList.remove('dragging'); const wasDrag = LB.drag && moved; LB.drag = null; if (e.target.closest('.lb-nav') || wasDrag) return; if (e.target === lbImg || LB.z) lbSetZoom(!LB.z, e.clientX, e.clientY); });
+$('lbZoom').addEventListener('click', () => lbSetZoom(!LB.z));
+$('lbClose').addEventListener('click', lbClose);
+$('lbPrev').addEventListener('click', () => lbShow(LB.i - 1));
+$('lbNext').addEventListener('click', () => lbShow(LB.i + 1));
+$('lbBuy').addEventListener('click', () => { const p = order[LB.i]; lbClose(); set({ domain:p.d, puzzle:p.id, plan:'los', added:false }); $('explorer').scrollIntoView(); });
+$('lbAbo').addEventListener('click', () => { const p = order[LB.i]; lbClose(); set({ domain:p.d, puzzle:p.id, plan:'abo', added:false }); $('explorer').scrollIntoView(); });
+document.addEventListener('keydown', e => { if (!$('lb').classList.contains('open')) return; if (e.key === 'Escape') lbClose(); else if (e.key === 'ArrowLeft') lbShow(LB.i - 1); else if (e.key === 'ArrowRight') lbShow(LB.i + 1); });
+window.addEventListener('resize', () => { if (LB.z) lbSetZoom(false); });
+document.addEventListener('click', e => { const v = e.target.closest('[data-view]'); if (v) lbOpen(v.dataset.view); });
+$('lbZoom').innerHTML = zoomIcon;
 renderCollection(); render();
 </script>
 </body>
